@@ -272,6 +272,30 @@ body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text);
   .summary-strip { grid-template-columns:repeat(3,1fr); }
   .prop-stats { grid-template-columns:repeat(3,1fr); }
 }
+
+/* ── PROVIDERS ── */
+.svc-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin-bottom:12px; cursor:pointer; transition:all 0.15s; }
+.svc-card:active { transform:scale(0.98); background:var(--card2); }
+.svc-header { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+.svc-icon { width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; background:var(--goldDim); border:1px solid rgba(251,191,36,0.2); }
+.svc-name { font-weight:600; font-size:15px; }
+.svc-meta { font-size:11px; color:var(--text3); margin-top:2px; }
+.svc-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:12px; }
+.svc-stat { background:var(--bg3); border-radius:8px; padding:10px 8px; text-align:center; }
+.svc-stat .sv { font-family:'Playfair Display',serif; font-size:15px; font-weight:700; color:var(--gold); }
+.svc-stat .sl { font-size:9px; color:var(--text3); text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+.svc-stat .sv.paid { color:var(--green); }
+.svc-stat .sv.pending { color:var(--red); }
+.status-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:99px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
+.status-badge.paid { background:var(--greenDim); color:var(--green); }
+.status-badge.pending { background:var(--redDim); color:var(--red); }
+.visit-item { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px 16px; margin-bottom:8px; display:flex; align-items:center; gap:12px; cursor:pointer; transition:all 0.15s; }
+.visit-item:active { transform:scale(0.98); }
+.visit-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.visit-dot.paid { background:var(--green); }
+.visit-dot.pending { background:var(--red); }
+.pay-method { display:inline-block; font-size:9px; font-weight:700; padding:2px 7px; border-radius:99px; background:var(--blueDim); color:var(--blue); text-transform:uppercase; letter-spacing:0.5px; margin-left:6px; }
+
 </style>
 </head>
 <body>
@@ -323,6 +347,7 @@ body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text);
     <div class="nav-tab" data-view="reservations" onclick="showView('reservations')">📅 Reservas</div>
     <div class="nav-tab" data-view="expenses" onclick="showView('expenses')">💸 Gastos</div>
     <div class="nav-tab" data-view="report" onclick="showView('report')">📈 Reporte</div>
+    <div class="nav-tab" data-view="providers" onclick="showView('providers')">🔧 Servicios</div>
     <div class="nav-tab" id="tab-admin" data-view="admin" onclick="showView('admin')" style="display:none">👤 Admin</div>
   </div>
 
@@ -430,6 +455,23 @@ body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text);
       </div>
     </div>
 
+
+    <!-- PROVIDERS -->
+    <div class="view" id="view-providers">
+      <div class="sec-hdr" style="flex-direction:column;align-items:flex-start;gap:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+          <div class="sec-title">Servicios</div>
+          <div class="btn-add" onclick="openAddProvider()">＋ Proveedor</div>
+        </div>
+        <div class="prop-selector" id="svc-prop-selector"></div>
+      </div>
+      <div class="month-nav">
+        <button class="month-nav-btn" onclick="changeSvcMonth(-1)">‹</button>
+        <span id="svc-month-lbl"></span>
+        <button class="month-nav-btn" onclick="changeSvcMonth(1)">›</button>
+      </div>
+      <div id="providers-list"></div>
+    </div>
   </div><!-- /main -->
 </div><!-- /app -->
 
@@ -545,6 +587,90 @@ body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text);
 <!-- Detail Expense -->
 <div class="modal-overlay" id="modal-exp-detail">
   <div class="modal" id="modal-exp-detail-content"></div>
+</div>
+
+
+<!-- Add/Edit Provider -->
+<div class="modal-overlay" id="modal-provider">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-provider-title">Nuevo proveedor</div>
+    <div class="form-grp"><label class="form-lbl">Propiedad</label>
+      <select class="form-inp" id="svc-prop-sel"></select>
+    </div>
+    <div class="form-grp"><label class="form-lbl">Nombre del proveedor</label><input class="form-inp" id="svc-name" placeholder="Ej. María Limpieza"></div>
+    <div class="form-grp"><label class="form-lbl">Categoría</label>
+      <select class="form-inp" id="svc-cat">
+        <option value="Limpieza">🧹 Limpieza</option>
+        <option value="Piscina">🏊 Mantenimiento piscina</option>
+        <option value="Jardín">🌿 Jardín / Áreas</option>
+        <option value="Mantenimiento">🔧 Mantenimiento general</option>
+        <option value="Seguridad">🛡️ Seguridad</option>
+        <option value="Otro">📦 Otro</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-grp"><label class="form-lbl">Precio por visita</label><input class="form-inp" id="svc-price" type="number" placeholder="0.00"></div>
+      <div class="form-grp"><label class="form-lbl">Frecuencia</label>
+        <select class="form-inp" id="svc-freq">
+          <option value="semanal">Semanal</option>
+          <option value="quincenal">Quincenal</option>
+          <option value="mensual">Mensual</option>
+          <option value="variable">Variable</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grp"><label class="form-lbl">Teléfono / Contacto</label><input class="form-inp" id="svc-phone" placeholder="Ej. 8888-8888"></div>
+    <div class="form-grp"><label class="form-lbl">Notas</label><input class="form-inp" id="svc-notes" placeholder="Notas adicionales..."></div>
+    <button class="btn-save" id="provider-save-btn" onclick="saveProvider()">Guardar proveedor</button>
+    <button class="btn-danger" id="provider-del-btn" style="display:none" onclick="deleteProvider()">Eliminar proveedor</button>
+  </div>
+</div>
+
+<!-- Add Visit -->
+<div class="modal-overlay" id="modal-visit">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-visit-title">Registrar visita</div>
+    <div class="form-grp"><label class="form-lbl">Fecha de visita</label><input class="form-inp" id="visit-date" type="date"></div>
+    <div class="form-grp"><label class="form-lbl">Trabajador / Quién vino</label><input class="form-inp" id="visit-worker" placeholder="Ej. María, Juan..."></div>
+    <div class="form-grp"><label class="form-lbl">Trabajo realizado</label><input class="form-inp" id="visit-work" placeholder="Ej. Limpieza general, cambio de filtro..."></div>
+    <div class="form-grp"><label class="form-lbl">Monto cobrado</label><input class="form-inp" id="visit-amount" type="number" placeholder="0.00"></div>
+    <div class="form-grp"><label class="form-lbl">Notas</label><input class="form-inp" id="visit-notes" placeholder="Observaciones adicionales..."></div>
+    <button class="btn-save" id="visit-save-btn" onclick="saveVisit()">Guardar visita</button>
+    <button class="btn-danger" id="visit-del-btn" style="display:none" onclick="deleteVisit()">Eliminar visita</button>
+  </div>
+</div>
+
+<!-- Register Payment -->
+<div class="modal-overlay" id="modal-payment">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Registrar pago del mes</div>
+    <div class="form-grp"><label class="form-lbl">Método de pago</label>
+      <select class="form-inp" id="pay-method">
+        <option value="SINPE">📱 SINPE Móvil</option>
+        <option value="Transferencia">🏦 Transferencia bancaria</option>
+        <option value="Efectivo">💵 Efectivo</option>
+        <option value="Otro">📦 Otro</option>
+      </select>
+    </div>
+    <div class="form-grp"><label class="form-lbl">Monto pagado</label><input class="form-inp" id="pay-amount" type="number" placeholder="0.00"></div>
+    <div class="form-grp"><label class="form-lbl">N° Transacción / Comprobante</label><input class="form-inp" id="pay-ref" placeholder="Ej. 123456789"></div>
+    <div class="form-grp"><label class="form-lbl">Fecha de pago</label><input class="form-inp" id="pay-date" type="date"></div>
+    <div class="form-grp"><label class="form-lbl">Notas</label><input class="form-inp" id="pay-notes" placeholder="Notas del pago..."></div>
+    <button class="btn-save" id="payment-save-btn" onclick="savePayment()">Confirmar pago</button>
+  </div>
+</div>
+
+<!-- Provider Detail -->
+<div class="modal-overlay" id="modal-provider-detail">
+  <div class="modal" id="modal-provider-detail-content"></div>
+</div>
+
+<!-- Visit Detail -->
+<div class="modal-overlay" id="modal-visit-detail">
+  <div class="modal" id="modal-visit-detail-content"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1400,6 +1526,349 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
     if(e.target === overlay) overlay.classList.remove('open');
   });
 });
+
+// ── PROVIDERS STATE ──
+let providers = [];
+let visits = [];
+let payments = [];
+let selectedSvcProp = 'all';
+let svcMonth = new Date().getMonth();
+let svcYear = new Date().getFullYear();
+let editingProviderId = null;
+let editingVisitId = null;
+let currentPaymentProviderId = null;
+
+const catIconSvc = {'Limpieza':'🧹','Piscina':'🏊','Jardín':'🌿','Mantenimiento':'🔧','Seguridad':'🛡️','Otro':'📦'};
+const freqLabel = {'semanal':'Semanal','quincenal':'Quincenal','mensual':'Mensual','variable':'Variable'};
+
+// Extend loadData to include providers
+const _origLoadData = loadData;
+async function loadData() {
+  await _origLoadData();
+  const pvSnap = await getDocs(collection(db,'providers'));
+  providers = pvSnap.docs.map(d=>({id:d.id,...d.data()}));
+  const vSnap = await getDocs(collection(db,'visits'));
+  visits = vSnap.docs.map(d=>({id:d.id,...d.data()}));
+  const pySnap = await getDocs(collection(db,'payments'));
+  payments = pySnap.docs.map(d=>({id:d.id,...d.data()}));
+}
+
+// Extend renderCurrentView
+const _origRenderCurrentView = renderCurrentView;
+function renderCurrentView() {
+  if(currentView === 'providers') renderProviders();
+  else _origRenderCurrentView();
+}
+
+window.changeSvcMonth = function(d) {
+  svcMonth += d;
+  if(svcMonth<0){svcMonth=11;svcYear--;}
+  if(svcMonth>11){svcMonth=0;svcYear++;}
+  renderProviders();
+}
+
+window.setSvcProp = function(id) {
+  selectedSvcProp = id;
+  renderProviders();
+}
+
+function renderProviders() {
+  buildPropSelector('svc-prop-selector', selectedSvcProp, 'setSvcProp');
+  document.getElementById('svc-month-lbl').textContent = months[svcMonth] + ' ' + svcYear;
+
+  const c = document.getElementById('providers-list');
+  let filteredProviders = providers.filter(p => selectedSvcProp==='all' || p.propertyId===selectedSvcProp);
+
+  if(!filteredProviders.length) {
+    c.innerHTML = '<div class="empty"><div class="empty-icon">🔧</div><div class="empty-text">No hay proveedores registrados.<br>Toca + para agregar uno.</div></div>';
+    return;
+  }
+
+  c.innerHTML = filteredProviders.map(p => {
+    const pVisits = getMonthVisits(p.id, svcMonth, svcYear);
+    const totalVisits = pVisits.length;
+    const totalAmount = pVisits.reduce((s,v)=>s+parseFloat(v.amount||p.pricePerVisit||0),0);
+    const pay = payments.find(py=>py.providerId===p.id && py.month===svcMonth && py.year===svcYear);
+    const isPaid = !!pay;
+    const prop = properties.find(pr=>pr.id===p.propertyId);
+
+    return '<div class="svc-card" onclick="showProviderDetail(\''+p.id+'\')">'+
+      '<div class="svc-header">'+
+        '<div class="svc-icon">'+(catIconSvc[p.category]||'📦')+'</div>'+
+        '<div style="flex:1">'+
+          '<div class="svc-name">'+p.name+'</div>'+
+          '<div class="svc-meta">'+(p.category||'')+(prop?' · '+prop.name:'')+(p.phone?' · '+p.phone:'')+'</div>'+
+        '</div>'+
+        '<span class="status-badge '+(isPaid?'paid':'pending')+'">'+(isPaid?'✓ Pagado':'Pendiente')+'</span>'+
+      '</div>'+
+      '<div class="svc-stats">'+
+        '<div class="svc-stat"><div class="sv">'+totalVisits+'</div><div class="sl">Visitas</div></div>'+
+        '<div class="svc-stat"><div class="sv">'+(p.pricePerVisit?fmt(p.pricePerVisit):'-')+'</div><div class="sl">Por visita</div></div>'+
+        '<div class="svc-stat"><div class="sv '+(isPaid?'paid':'pending')+'">'+fmt(isPaid?(pay.amount||0):totalAmount)+'</div><div class="sl">'+(isPaid?'Pagado':'A pagar')+'</div></div>'+
+      '</div>'+
+      '<div style="display:flex;gap:8px">'+
+        '<div class="btn-add" style="flex:1;justify-content:center;font-size:11px" onclick="event.stopPropagation();openAddVisit(\''+p.id+'\')">＋ Visita</div>'+
+        (!isPaid?'<div class="btn-add" style="flex:1;justify-content:center;font-size:11px;background:var(--greenDim);border-color:rgba(74,222,128,0.25);color:var(--green)" onclick="event.stopPropagation();openPayment(\''+p.id+'\','+totalAmount+')">💳 Pagar</div>':'<div style="flex:1;text-align:center;font-size:11px;color:var(--text3);padding:8px">'+pay.method+' · '+fmtDate(pay.payDate)+'</div>')+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function getMonthVisits(providerId, m, y) {
+  return visits.filter(v => {
+    if(v.providerId !== providerId) return false;
+    const d = new Date(v.date+'T12:00:00');
+    return d.getMonth()===m && d.getFullYear()===y;
+  });
+}
+
+window.showProviderDetail = function(id) {
+  const p = providers.find(x=>x.id===id);
+  if(!p) return;
+  const prop = properties.find(pr=>pr.id===p.propertyId);
+  const allVisits = visits.filter(v=>v.providerId===id).sort((a,b)=>b.date.localeCompare(a.date));
+  const monthVisits = getMonthVisits(id, svcMonth, svcYear);
+  const totalMonth = monthVisits.reduce((s,v)=>s+parseFloat(v.amount||p.pricePerVisit||0),0);
+  const pay = payments.find(py=>py.providerId===id && py.month===svcMonth && py.year===svcYear);
+
+  let visitsHtml = allVisits.slice(0,10).map(v =>
+    '<div class="visit-item" onclick="showVisitDetail(\''+v.id+'\')">'+
+      '<div class="visit-dot '+(v.paid?'paid':'pending')+'"></div>'+
+      '<div class="li-info">'+
+        '<div class="li-name">'+(v.worker||'Visita')+'</div>'+
+        '<div class="li-meta">'+fmtDate(v.date)+(v.work?' · '+v.work:'')+'</div>'+
+      '</div>'+
+      '<div class="li-amt '+(v.paid?'inc':'exp')+'">'+fmt(v.amount||p.pricePerVisit||0)+'</div>'+
+    '</div>'
+  ).join('');
+
+  document.getElementById('modal-provider-detail-content').innerHTML =
+    '<div class="modal-handle"></div>'+
+    '<div class="detail-hdr" style="background:var(--goldDim);border-color:rgba(251,191,36,0.15)">'+
+      '<h2>'+(catIconSvc[p.category]||'📦')+' '+p.name+'</h2>'+
+      '<div style="font-size:13px;color:var(--text2);margin-top:4px">'+(p.category||'')+(prop?' · '+prop.name:'')+'</div>'+
+    '</div>'+
+    '<div class="detail-drow"><span class="dk">Frecuencia</span><span class="dv">'+(freqLabel[p.frequency]||p.frequency||'-')+'</span></div>'+
+    '<div class="detail-drow"><span class="dk">Precio por visita</span><span class="dv">'+(p.pricePerVisit?fmt(p.pricePerVisit):'-')+'</span></div>'+
+    (p.phone?'<div class="detail-drow"><span class="dk">Teléfono</span><span class="dv">'+p.phone+'</span></div>':'')+
+    '<div class="detail-drow"><span class="dk">Visitas este mes</span><span class="dv">'+monthVisits.length+'</span></div>'+
+    '<div class="detail-drow"><span class="dk">Total este mes</span><span class="dv" style="color:var(--gold)">'+fmt(totalMonth)+'</span></div>'+
+    (pay?'<div class="detail-drow"><span class="dk">Estado</span><span class="dv"><span class="status-badge paid">✓ Pagado</span></span></div>'+
+         '<div class="detail-drow"><span class="dk">Método</span><span class="dv">'+pay.method+'</span></div>'+
+         (pay.ref?'<div class="detail-drow"><span class="dk">N° Transacción</span><span class="dv">'+pay.ref+'</span></div>':'')+
+         (pay.payNotes?'<div class="detail-drow"><span class="dk">Notas pago</span><span class="dv">'+pay.payNotes+'</span></div>':'')
+    :'<div class="detail-drow"><span class="dk">Estado</span><span class="dv"><span class="status-badge pending">Pendiente</span></span></div>')+
+    '<br>'+
+    '<div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;font-weight:600">Visitas registradas</div>'+
+    (visitsHtml||'<div style="text-align:center;padding:16px;color:var(--text3);font-size:13px">Sin visitas este mes</div>')+
+    '<br>'+
+    '<button class="btn-save" onclick="editProvider(\''+id+'\')">✏️ Editar proveedor</button>'+
+    (!pay?'<button class="btn-save" style="margin-top:8px;background:var(--goldDim);color:var(--gold);border:1px solid rgba(251,191,36,0.3)" onclick="closeModal(\'modal-provider-detail\');openPayment(\''+id+'\','+totalMonth+')">💳 Registrar pago</button>':'')+
+    '<button class="btn-add" style="width:100%;justify-content:center;margin-top:8px" onclick="closeModal(\'modal-provider-detail\');openAddVisit(\''+id+'\')">＋ Agregar visita</button>';
+
+  openModal('modal-provider-detail');
+}
+
+window.showVisitDetail = function(id) {
+  const v = visits.find(x=>x.id===id);
+  if(!v) return;
+  const p = providers.find(x=>x.id===v.providerId);
+  document.getElementById('modal-visit-detail-content').innerHTML =
+    '<div class="modal-handle"></div>'+
+    '<div class="detail-hdr">'+
+      '<h2>🗓️ '+(v.worker||'Visita')+'</h2>'+
+      '<div class="damt inc">'+fmt(v.amount||p?.pricePerVisit||0)+'</div>'+
+    '</div>'+
+    '<div class="detail-drow"><span class="dk">Proveedor</span><span class="dv">'+(p?.name||'-')+'</span></div>'+
+    '<div class="detail-drow"><span class="dk">Fecha</span><span class="dv">'+fmtDate(v.date)+'</span></div>'+
+    (v.worker?'<div class="detail-drow"><span class="dk">Quién vino</span><span class="dv">'+v.worker+'</span></div>':'')+
+    (v.work?'<div class="detail-drow"><span class="dk">Trabajo</span><span class="dv">'+v.work+'</span></div>':'')+
+    (v.notes?'<div class="detail-drow"><span class="dk">Notas</span><span class="dv">'+v.notes+'</span></div>':'')+
+    '<br>'+
+    '<button class="btn-save" onclick="editVisit(\''+id+'\')">✏️ Editar</button>'+
+    '<button class="btn-danger" onclick="deleteVisitDirect(\''+id+'\')">Eliminar visita</button>';
+  openModal('modal-visit-detail');
+}
+
+// ── OPEN/SAVE PROVIDER ──
+window.openAddProvider = function() {
+  editingProviderId = null;
+  document.getElementById('modal-provider-title').textContent = 'Nuevo proveedor';
+  document.getElementById('provider-del-btn').style.display = 'none';
+  buildPropOptions('svc-prop-sel', selectedSvcProp==='all'?(properties[0]?.id||''):selectedSvcProp);
+  document.getElementById('svc-name').value = '';
+  document.getElementById('svc-cat').value = 'Limpieza';
+  document.getElementById('svc-price').value = '';
+  document.getElementById('svc-freq').value = 'semanal';
+  document.getElementById('svc-phone').value = '';
+  document.getElementById('svc-notes').value = '';
+  openModal('modal-provider');
+}
+
+window.editProvider = function(id) {
+  closeModal('modal-provider-detail');
+  const p = providers.find(x=>x.id===id);
+  if(!p) return;
+  editingProviderId = id;
+  document.getElementById('modal-provider-title').textContent = 'Editar proveedor';
+  document.getElementById('provider-del-btn').style.display = 'block';
+  buildPropOptions('svc-prop-sel', p.propertyId);
+  document.getElementById('svc-name').value = p.name||'';
+  document.getElementById('svc-cat').value = p.category||'Limpieza';
+  document.getElementById('svc-price').value = p.pricePerVisit||'';
+  document.getElementById('svc-freq').value = p.frequency||'semanal';
+  document.getElementById('svc-phone').value = p.phone||'';
+  document.getElementById('svc-notes').value = p.notes||'';
+  setTimeout(()=>openModal('modal-provider'),300);
+}
+
+window.saveProvider = async function() {
+  const propId = document.getElementById('svc-prop-sel').value;
+  const name = document.getElementById('svc-name').value.trim();
+  const category = document.getElementById('svc-cat').value;
+  const pricePerVisit = parseFloat(document.getElementById('svc-price').value)||0;
+  const frequency = document.getElementById('svc-freq').value;
+  const phone = document.getElementById('svc-phone').value.trim();
+  const notes = document.getElementById('svc-notes').value.trim();
+  if(!name) { showToast('⚠️ El nombre es requerido'); return; }
+  const btn = document.getElementById('provider-save-btn');
+  btn.disabled=true; btn.textContent='Guardando...';
+  const data = {propertyId:propId,name,category,pricePerVisit,frequency,phone,notes};
+  try {
+    if(editingProviderId) {
+      await updateDoc(doc(db,'providers',editingProviderId), data);
+      const i=providers.findIndex(x=>x.id===editingProviderId);
+      if(i>=0) providers[i]={...providers[i],...data};
+    } else {
+      const ref = await addDoc(collection(db,'providers'),{...data,createdBy:currentUser.uid,createdAt:serverTimestamp()});
+      providers.push({id:ref.id,...data});
+    }
+    closeModal('modal-provider');
+    renderProviders();
+    showToast('✓ Proveedor guardado');
+  } catch(e){ showToast('Error: '+e.message); }
+  btn.disabled=false; btn.textContent='Guardar proveedor';
+}
+
+window.deleteProvider = async function() {
+  if(!confirm('¿Eliminar este proveedor y sus visitas?')) return;
+  try {
+    await deleteDoc(doc(db,'providers',editingProviderId));
+    providers=providers.filter(x=>x.id!==editingProviderId);
+    const vDel=visits.filter(v=>v.providerId===editingProviderId);
+    for(const v of vDel) await deleteDoc(doc(db,'visits',v.id));
+    visits=visits.filter(v=>v.providerId!==editingProviderId);
+    payments=payments.filter(p=>p.providerId!==editingProviderId);
+    closeModal('modal-provider');
+    renderProviders();
+    showToast('✓ Proveedor eliminado');
+  } catch(e){ showToast('Error: '+e.message); }
+}
+
+// ── VISITS ──
+window.openAddVisit = function(providerId) {
+  editingVisitId = null;
+  editingProviderId = providerId;
+  const p = providers.find(x=>x.id===providerId);
+  document.getElementById('modal-visit-title').textContent = 'Visita · '+(p?.name||'');
+  document.getElementById('visit-del-btn').style.display = 'none';
+  document.getElementById('visit-date').value = todayStr();
+  document.getElementById('visit-worker').value = '';
+  document.getElementById('visit-work').value = '';
+  document.getElementById('visit-amount').value = p?.pricePerVisit||'';
+  document.getElementById('visit-notes').value = '';
+  openModal('modal-visit');
+}
+
+window.editVisit = function(id) {
+  closeModal('modal-visit-detail');
+  const v = visits.find(x=>x.id===id);
+  if(!v) return;
+  editingVisitId = id;
+  editingProviderId = v.providerId;
+  const p = providers.find(x=>x.id===v.providerId);
+  document.getElementById('modal-visit-title').textContent = 'Editar visita · '+(p?.name||'');
+  document.getElementById('visit-del-btn').style.display = 'block';
+  document.getElementById('visit-date').value = v.date||'';
+  document.getElementById('visit-worker').value = v.worker||'';
+  document.getElementById('visit-work').value = v.work||'';
+  document.getElementById('visit-amount').value = v.amount||'';
+  document.getElementById('visit-notes').value = v.notes||'';
+  setTimeout(()=>openModal('modal-visit'),300);
+}
+
+window.saveVisit = async function() {
+  const date = document.getElementById('visit-date').value;
+  const worker = document.getElementById('visit-worker').value.trim();
+  const work = document.getElementById('visit-work').value.trim();
+  const amount = parseFloat(document.getElementById('visit-amount').value)||0;
+  const notes = document.getElementById('visit-notes').value.trim();
+  if(!date) { showToast('⚠️ La fecha es requerida'); return; }
+  const btn = document.getElementById('visit-save-btn');
+  btn.disabled=true; btn.textContent='Guardando...';
+  const data = {providerId:editingProviderId,date,worker,work,amount,notes};
+  try {
+    if(editingVisitId) {
+      await updateDoc(doc(db,'visits',editingVisitId), data);
+      const i=visits.findIndex(x=>x.id===editingVisitId);
+      if(i>=0) visits[i]={...visits[i],...data};
+    } else {
+      const ref = await addDoc(collection(db,'visits'),{...data,createdBy:currentUser.uid,createdAt:serverTimestamp()});
+      visits.push({id:ref.id,...data});
+    }
+    closeModal('modal-visit');
+    renderProviders();
+    showToast('✓ Visita registrada');
+  } catch(e){ showToast('Error: '+e.message); }
+  btn.disabled=false; btn.textContent='Guardar visita';
+}
+
+window.deleteVisit = async function() {
+  if(editingVisitId) await deleteVisitDirect(editingVisitId);
+  closeModal('modal-visit');
+}
+window.deleteVisitDirect = async function(id) {
+  if(!confirm('¿Eliminar esta visita?')) return;
+  try {
+    await deleteDoc(doc(db,'visits',id));
+    visits=visits.filter(x=>x.id!==id);
+    closeModal('modal-visit-detail');
+    renderProviders();
+    showToast('✓ Visita eliminada');
+  } catch(e){ showToast('Error: '+e.message); }
+}
+
+// ── PAYMENTS ──
+window.openPayment = function(providerId, suggestedAmount) {
+  currentPaymentProviderId = providerId;
+  const p = providers.find(x=>x.id===providerId);
+  document.getElementById('pay-method').value = 'SINPE';
+  document.getElementById('pay-amount').value = suggestedAmount||'';
+  document.getElementById('pay-ref').value = '';
+  document.getElementById('pay-date').value = todayStr();
+  document.getElementById('pay-notes').value = '';
+  openModal('modal-payment');
+}
+
+window.savePayment = async function() {
+  const method = document.getElementById('pay-method').value;
+  const amount = parseFloat(document.getElementById('pay-amount').value)||0;
+  const ref = document.getElementById('pay-ref').value.trim();
+  const payDate = document.getElementById('pay-date').value;
+  const payNotes = document.getElementById('pay-notes').value.trim();
+  if(!payDate) { showToast('⚠️ La fecha es requerida'); return; }
+  const btn = document.getElementById('payment-save-btn');
+  btn.disabled=true; btn.textContent='Guardando...';
+  const data = {providerId:currentPaymentProviderId,month:svcMonth,year:svcYear,method,amount,ref,payDate,payNotes};
+  try {
+    const ref2 = await addDoc(collection(db,'payments'),{...data,createdBy:currentUser.uid,createdAt:serverTimestamp()});
+    payments.push({id:ref2.id,...data});
+    closeModal('modal-payment');
+    renderProviders();
+    showToast('✓ Pago registrado');
+  } catch(e){ showToast('Error: '+e.message); }
+  btn.disabled=false; btn.textContent='Confirmar pago';
+}
 
 // Key handler - Enter on auth
 document.getElementById('auth-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
